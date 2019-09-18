@@ -47,14 +47,15 @@ def read_text(file,target):
 # Process training data
 print('')
 print('Preprocessing training data...',end='')
-todo = list(Path(os.path.join(paras.data_path,'train')).rglob("*.[wW][aA][vV]"))
+todo = list(Path(os.path.join(paras.data_path,'train')).rglob(r"*.[wW][aA][vV]"))
+todo = [_t for _t in todo if len(str(_t).split('.'))<3] # filter out the file with ext .wav.wav
 print(len(todo),'audio files found in training set (should be 4620)')
 
 
 print('Extracting acoustic feature...',flush=True)
 tr_x = Parallel(n_jobs=paras.n_jobs)(delayed(extract_feature)(str(file),feature=paras.feature_type,dim=paras.feature_dim,cmvn=paras.apply_cmvn,delta=paras.apply_delta,delta_delta=paras.apply_delta_delta) for file in tqdm(todo))
 print('Encoding training target...',flush=True)
-tr_y = Parallel(n_jobs=paras.n_jobs)(delayed(read_text)(str(file),target=paras.target)                               for file in tqdm(todo))
+tr_y = Parallel(n_jobs=paras.n_jobs)(delayed(read_text)(str(file),target=paras.target) for file in tqdm(todo))
 tr_y, encode_table = encode_target(tr_y,table=None,mode=paras.target,max_idx=paras.n_tokens)
 
 dim = paras.feature_dim*(1+paras.apply_delta+paras.apply_delta_delta)
@@ -75,6 +76,7 @@ with open(os.path.join(output_dir,"mapping.pkl"), "wb") as fp:
 # Process testing data
 print('Preprocessing testing data...',end='')
 todo = list(Path(os.path.join(paras.data_path,'test')).rglob("*.[wW][aA][vV]"))
+todo = [_t for _t in todo if len(str(_t).split('.'))<3]
 print(len(todo),'audio files found in test set (should be 1680)')
 
 print('Extracting acoustic feature...',flush=True)
