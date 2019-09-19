@@ -56,6 +56,7 @@ def read_conf(cfg_path, options):
     options.N_epochs=int(Config.get('optimization', 'N_epochs'))
     options.N_eval_epoch=int(Config.get('optimization', 'N_eval_epoch'))
     options.print_every=int(Config.get('optimization', 'print_every'))
+    options.oversampling=int(Config.get('optimization', 'oversampling'))
     options.seed=int(Config.get('optimization', 'seed'))
     
     return options

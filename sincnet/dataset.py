@@ -42,7 +42,7 @@ class TIMIT(Dataset):
         return len(self.data_list)*self.oversampling
 
     def prepara_train_data(self, index):
-        index = index % self.oversampling
+        index = index % len(self.data_list)
         filename = self.data_list[index]
         [wav_data, fs] = sf.read(osp.join(self.data_root, filename))
         wrd_data = read_list(osp.join(self.data_root, osp.splitext(filename)[0]+".wrd"))

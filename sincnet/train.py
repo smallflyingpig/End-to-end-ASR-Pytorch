@@ -30,7 +30,7 @@ def batch_process(model:SpeakerIDNet, data, train_mode=True, **kwargs)->dict:
         optimizer.step()
         loss, err = loss.detach().item(), err.detach().item()
         rtn = {
-            "output":"loss:{}, error:{}".format(loss, err),
+            "output":"loss:{}, err:{}".format(loss, err),
             "vars":{"loss":loss, "err":err},
             "count":{"loss":len(label), "err":len(label)}
         }
@@ -101,7 +101,7 @@ def main(args):
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     if args.dataset == 'timit':
-        train_dataset = TIMIT(data_root=args.data_root, datalist_root=args.datalist_root, train=True)
+        train_dataset = TIMIT(data_root=args.data_root, datalist_root=args.datalist_root, train=True, oversampling=args.oversampling)
         test_dataset = TIMIT(data_root=args.data_root, datalist_root=args.datalist_root, train=False)
     elif args.dataset == 'libri':
         raise NotImplementedError
