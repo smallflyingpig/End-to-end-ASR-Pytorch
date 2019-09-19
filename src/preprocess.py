@@ -3,6 +3,7 @@
 import librosa
 import numpy as np
 from operator import itemgetter
+import torchaudio
 # NOTE: there are warnings for MFCC extraction due to librosa's issue
 import warnings
 warnings.filterwarnings("ignore")
@@ -20,18 +21,26 @@ warnings.filterwarnings("ignore")
 #     acoustic features with shape (time step, dim)
 def extract_feature(input_file,feature='fbank',dim=40, cmvn=True, delta=False, delta_delta=False,
                     window_size=25, stride=10,save_feature=None):
-    y, sr = librosa.load(input_file,sr=None)
-    ws = int(sr*0.001*window_size)
-    st = int(sr*0.001*stride)
     if feature == 'fbank': # log-scaled
+        y, sr = librosa.load(input_file,sr=None)
+        ws = int(sr*0.001*window_size)
+        st = int(sr*0.001*stride)
         feat = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=dim,
                                     n_fft=ws, hop_length=st)
         feat = np.log(feat+1e-6)
     elif feature == 'mfcc':
+        y, sr = librosa.load(input_file,sr=None)
+        ws = int(sr*0.001*window_size)
+        st = int(sr*0.001*stride)
         feat = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=dim, n_mels=26,
                                     n_fft=ws, hop_length=st)
         feat[0] = librosa.feature.rmse(y, hop_length=st, frame_length=ws) 
-        
+    elif feature == 'mfcc_torch':
+        y, sr = torchaudio.load(input_file)
+        ws = int(sr*0.001*window_size)
+        st = int(sr*0.001*stride)
+        transform = torchaudio.transforms.MFCC(sample_rate=sr, n_mfcc=dim, melkwargs={'hop_length':st, 'n_mels':26, 'n_fft':ws})
+        feat = transform(y)[0].detach().numpy()
     else:
         raise ValueError('Unsupported Acoustic Feature: '+feature)
 
@@ -50,6 +59,7 @@ def extract_feature(input_file,feature='fbank',dim=40, cmvn=True, delta=False, d
         return len(tmp)
     else:
         return np.swapaxes(feat,0,1).astype('float32')
+
 
 # Target Encoding Function
 # Parameters
