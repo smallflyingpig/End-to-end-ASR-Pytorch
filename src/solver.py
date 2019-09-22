@@ -207,7 +207,7 @@ class Trainer(Solver):
         else:
             self.log.add_scalars(val_name,val_dict,self.step)
 
-
+    @torch.no_grad
     def valid(self):
         '''Perform validation step (!!!NOTE!!! greedy decoding with Attention decoder only)'''
         self.asr_model.eval()
@@ -244,8 +244,8 @@ class Trainer(Solver):
                 t1,t2 = cal_cer(att_pred,label,mapper=self.mapper,get_sentence=True)
                 all_pred += t1
                 all_true += t2
-                val_acc += cal_acc(att_pred,label)*int(x.shape[0])
-                val_cer += cal_cer(att_pred,label,mapper=self.mapper)*int(x.shape[0])
+                val_acc += cal_acc(att_pred.detach(),label)*int(x.shape[0])
+                val_cer += cal_cer(att_pred.detach(),label,mapper=self.mapper)*int(x.shape[0])
             
             # Compute CTC loss
             if self.ctc_weight>0:
