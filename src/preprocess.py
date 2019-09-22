@@ -39,7 +39,7 @@ def extract_feature(input_file,feature='fbank',dim=40, cmvn=True, delta=False, d
         y, sr = torchaudio.load(input_file)
         ws = int(sr*0.001*window_size)
         st = int(sr*0.001*stride)
-        transform = torchaudio.transforms.MFCC(sample_rate=sr, n_mfcc=dim, melkwargs={'hop_length':st, 'n_mels':26, 'n_fft':ws})
+        transform = torchaudio.transforms.MFCC(sample_rate=sr, n_mfcc=dim, melkwargs={'hop_length':st, 'n_mels':dim, 'n_fft':ws})
         feat = transform(y)[0].detach().numpy()
     else:
         raise ValueError('Unsupported Acoustic Feature: '+feature)
