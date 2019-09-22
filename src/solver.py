@@ -207,7 +207,7 @@ class Trainer(Solver):
         else:
             self.log.add_scalars(val_name,val_dict,self.step)
 
-    @torch.no_grad
+    @torch.no_grad()
     def valid(self):
         '''Perform validation step (!!!NOTE!!! greedy decoding with Attention decoder only)'''
         self.asr_model.eval()
