@@ -23,13 +23,16 @@ parser.add_argument('--test', action='store_true', help='Test the model.')
 parser.add_argument('--no-msg', action='store_true', help='Hide all messages.')
 parser.add_argument('--rnnlm', action='store_true', help='Option for training RNNLM.')
 parser.add_argument('--data_path', type=str, default='', help="rewrite the data path in config file")
+parser.add_argument('--raw_data_path', type=str, default='', help="rewrite the data path in config file")
 paras = parser.parse_args()
 setattr(paras,'gpu',not paras.cpu)
 setattr(paras,'verbose',not paras.no_msg)
 config = yaml.load(open(paras.config,'r'))
 if paras.data_path != '':
     config['solver']['data_path'] = paras.data_path
-
+if paras.raw_data_path != '':
+    config['solver']['raw_data_path'] = paras.raw_data_path
+    
 random.seed(paras.seed)
 np.random.seed(paras.seed)
 torch.manual_seed(paras.seed)

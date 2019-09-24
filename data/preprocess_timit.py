@@ -134,7 +134,8 @@ for s in tr_set:
     output_dir = os.path.join(paras.output_path,'_'.join(['timit',str(paras.feature_type)+str(dim),str(paras.target)+str(len(encode_table))]))
     print('Saving {}ing data to'.format(s),output_dir)
     if not os.path.exists(output_dir):os.makedirs(output_dir)
-    df = pd.DataFrame(data={'file_path':todo, 'length':[len(_x) for _x in tr_x], 'label':tr_y})
+    tr_y_str = ['_'.join([str(i) for i in _tr_y]) for _tr_y in tr_y]
+    df = pd.DataFrame(data={'file_path':todo, 'length':[len(_x) for _x in tr_x], 'label':tr_y_str})
     df.to_csv(os.path.join(output_dir, s+'.csv'))
     with open(os.path.join(output_dir,"{}_x.pkl".format(s)), "wb") as fp:
         pickle.dump(tr_x, fp)

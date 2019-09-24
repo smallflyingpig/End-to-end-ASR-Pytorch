@@ -33,7 +33,7 @@ def bucket_data(lens, data_list, bucket_size):
             tmp_data,tmp_len = [],[]
     if len(tmp_data)>0:
         data.append(tmp_data)
-    print("data len:", len(data))
+    # print("data len:", len(data))
     return data
 
 
@@ -48,6 +48,7 @@ def bucket_data(lens, data_list, bucket_size):
 class TimitDataset(Dataset):
     def __init__(self, file_path, raw_file_path, sets, bucket_size, max_timestep=0, max_label_len=0, raw_wav_data=False):
         self.raw_root = raw_file_path
+        self.raw_wav_data = raw_wav_data
         # Open dataset
         x = []
         y = []
@@ -58,16 +59,15 @@ class TimitDataset(Dataset):
             with open(os.path.join(file_path,s+'_y.pkl'),'rb') as fp:
                 y += pickle.load(fp)
             # load data path
-            with open(os.path.join(raw_file_path, s+".csv"), 'r') as fp:
-                tables += pd.read_csv(os.path.join(file_path,s+'.csv'))
+            tables.append(pd.read_csv(os.path.join(file_path,s+'.csv')))
         assert len(x)==len(y)
         
         # Sort data w.r.t. length
         self.X = []
         self.Y = []
-        sortd_len = reversed(np.argsort([len(t) for t in x]))
-        sorted_x = [x[idx] for idx in sortd_len]
-        sorted_y = [y[idx] for idx in sortd_len]
+        sortd_len = [len(t) for t in x]
+        sorted_x = [x[idx] for idx in reversed(np.argsort(sortd_len))]
+        sorted_y = [y[idx] for idx in reversed(np.argsort(sortd_len))]
         self.table = pd.concat(tables,ignore_index=True).sort_values(by=['length'],ascending=False)
 
         # Bucketing
@@ -83,7 +83,6 @@ class TimitDataset(Dataset):
         # bucketing data
         X = self.table['file_path'].tolist()
         X_lens = self.table['length'].tolist()
-            
         Y = [list(map(int, label.split('_'))) for label in self.table['label'].tolist()]
 
         # Bucketing, X & X_len is dummy when text_only==True
