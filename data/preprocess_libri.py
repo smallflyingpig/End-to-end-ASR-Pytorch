@@ -132,6 +132,7 @@ for s in tr_set:
             for line in f:tr_y.append(line[:-1].split(' '))
     else:
         tr_y = Parallel(n_jobs=paras.n_jobs)(delayed(read_text)(str(file),target=paras.target) for file in tqdm(todo))
+    print(len(tr_y))
     tr_y, encode_table = encode_target(tr_y,table=encode_table,mode=paras.target,max_idx=paras.n_tokens)
 
     if output_dir is None:
@@ -150,7 +151,7 @@ for s in tr_set:
     # Dump label
     df = pd.DataFrame(data={'file_path':[fp for fp in sorted_todo],'length':list(reversed(sorted(tr_x))),'label':sorted_y})
     df.to_csv(os.path.join(output_dir,s+'.csv'))
-
+    # train
     with open(os.path.join(output_dir,"mapping.pkl"), "wb") as fp:
         pickle.dump(encode_table, fp)
 

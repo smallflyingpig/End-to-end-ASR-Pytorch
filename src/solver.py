@@ -76,8 +76,12 @@ class Trainer(Solver):
         setattr(self,'dev_set',LoadDataset('dev',text_only=False,use_gpu=self.paras.gpu,**self.config['solver']))
         
         # Get 1 example for auto constructing model
-        for self.sample_x,_ in getattr(self,'train_set'):break
-        if len(self.sample_x.shape)==4: self.sample_x=self.sample_x[0]
+        for self.sample_x,y in getattr(self,'train_set'):break
+        if self.train_set.dataset.raw_wav_data:
+            self.sample_x, y = self.train_set.dataset.post_process((self.sample_x, y))
+        if len(self.sample_x.shape)==4: 
+            self.sample_x=self.sample_x[0]
+            print(self.sample_x.shape)
 
     def set_model(self):
         ''' Setup ASR (and CLM if enabled)'''
@@ -121,6 +125,8 @@ class Trainer(Solver):
 
         while self.step< self.max_step:
             for x,y in self.train_set:
+                if self.train_set.dataset.raw_wav_data:
+                    x,y = self.train_set.dataset.post_process((x,y))
                 self.progress('Training step - '+str(self.step))
                 
                 # Perform teacher forcing rate decaying
@@ -219,6 +225,8 @@ class Trainer(Solver):
         
         # Perform validation
         for cur_b,(x,y) in enumerate(self.dev_set):
+            if self.dev_set.dataset.raw_wav_data:
+                x,y = self.dev_set.dataset.post_process((x,y))
             self.progress(' '.join(['Valid step -',str(self.step),'(',str(cur_b),'/',str(len(self.dev_set)),')']))
 
             # Prepare data
@@ -241,7 +249,7 @@ class Trainer(Solver):
                            .to(device = self.device,dtype=torch.float32) # Sum each uttr and devide by length
                 seq_loss = torch.mean(seq_loss) # Mean by batch
                 val_att += seq_loss.detach()*int(x.shape[0])
-                t1,t2 = cal_cer(att_pred,label,mapper=self.mapper,get_sentence=True)
+                t1,t2 = cal_cer(att_pred.detach(),label,mapper=self.mapper,get_sentence=True)
                 all_pred += t1
                 all_true += t2
                 val_acc += cal_acc(att_pred.detach(),label)*int(x.shape[0])
@@ -395,6 +403,8 @@ class Tester(Solver):
         ctc_results = []
         with torch.no_grad():
             for cur_b,(x,y) in enumerate(self.dev_set):
+                if self.dev_set.dataset.raw_wav_data:
+                    x,y = self.dev_set.dataset.post_process((x,y))
                 self.progress(' '.join(['Valid step - (',str(cur_b),'/',str(len(self.dev_set)),')']))
 
                 # Prepare data

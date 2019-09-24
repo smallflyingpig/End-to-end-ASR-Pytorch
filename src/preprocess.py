@@ -3,10 +3,57 @@
 import librosa
 import numpy as np
 from operator import itemgetter
+import torch
 import torchaudio
 # NOTE: there are warnings for MFCC extraction due to librosa's issue
 import warnings
 warnings.filterwarnings("ignore")
+
+
+
+
+def compute_deltas(specgram, win_length=5, mode="replicate"):
+    # type: (Tensor, int, str) -> Tensor
+    r"""Compute delta coefficients of a tensor, usually a spectrogram:
+    .. math::
+        d_t = \frac{\sum_{n=1}^{\text{N}} n (c_{t+n} - c_{t-n})}{2 \sum_{n=1}^{\text{N} n^2}
+    where :math:`d_t` is the deltas at time :math:`t`,
+    :math:`c_t` is the spectrogram coeffcients at time :math:`t`,
+    :math:`N` is (`win_length`-1)//2.
+    Args:
+        specgram (torch.Tensor): Tensor of audio of dimension (channel, n_mfcc, time)
+        win_length (int): The window length used for computing delta
+        mode (str): Mode parameter passed to padding
+    Returns:
+        deltas (torch.Tensor): Tensor of audio of dimension (channel, n_mfcc, time)
+    Example
+        >>> specgram = torch.randn(1, 40, 1000)
+        >>> delta = compute_deltas(specgram)
+        >>> delta2 = compute_deltas(delta)
+    """
+
+    assert win_length >= 3
+    assert specgram.dim() == 3
+    assert not specgram.shape[1] % specgram.shape[0]
+
+    n = (win_length - 1) // 2
+
+    # twice sum of integer squared
+    denom = n * (n + 1) * (2 * n + 1) / 3
+
+    specgram = torch.nn.functional.pad(specgram, (n, n), mode=mode)
+
+    kernel = (
+        torch
+        .arange(-n, n + 1, 1, device=specgram.device, dtype=specgram.dtype)
+        .repeat(specgram.shape[1], specgram.shape[0], 1)
+    )
+
+    return torch.nn.functional.conv1d(
+        specgram, kernel, groups=specgram.shape[1] // specgram.shape[0]
+    ) / denom
+
+
 
 # Acoustic Feature Extraction
 # Parameters
@@ -39,17 +86,27 @@ def extract_feature(input_file,feature='fbank',dim=40, cmvn=True, delta=False, d
         y, sr = torchaudio.load(input_file)
         ws = int(sr*0.001*window_size)
         st = int(sr*0.001*stride)
-        transform = torchaudio.transforms.MFCC(sample_rate=sr, n_mfcc=dim, melkwargs={'hop_length':st, 'n_mels':dim, 'n_fft':ws})
-        feat = transform(y)[0].detach().numpy()
+        transform = torchaudio.transforms.MFCC(sample_rate=sr, n_mfcc=dim, 
+            melkwargs={'hop_length':st, 'n_fft':ws})
+        feat = transform(y).detach()
     else:
         raise ValueError('Unsupported Acoustic Feature: '+feature)
-
+    
     feat = [feat]
-    if delta:
-        feat.append(librosa.feature.delta(feat[0]))
+    if feature in ['fbank', 'mfcc']:
+        if delta:
+            feat.append(librosa.feature.delta(feat[0]))
+        if delta_delta:
+            feat.append(librosa.feature.delta(feat[0],order=2))
+    elif feature in ['mfcc_torch']:
+        if delta:
+            feat.append(compute_deltas(feat[0]))
+        if delta_delta:
+            feat.append(compute_deltas(feat[1]))
+        feat = [_f[0].numpy() for _f in feat]
+    else:
+        pass
 
-    if delta_delta:
-        feat.append(librosa.feature.delta(feat[0],order=2))
     feat = np.concatenate(feat,axis=0)
     if cmvn:
         feat = (feat - feat.mean(axis=1)[:,np.newaxis]) / (feat.std(axis=1)+1e-16)[:,np.newaxis]
@@ -66,7 +123,7 @@ def extract_feature(input_file,feature='fbank',dim=40, cmvn=True, delta=False, d
 #     - input list : list, list of target list
 #     - table      : dict, token-index table for encoding (generate one if it's None)
 #     - mode       : int, encoding mode ( phoneme / char / subword / word )
-#     - max idx    : int, max encoding index (0=<sos>, 1=<eos>, 2=<unk>)
+#     - max_idx    : int, max encoding index (0=<sos>, 1=<eos>, 2=<unk>)
 # Return
 #     - output list: list, list of encoded targets
 #     - output dic : dict, token-index table used during encoding
