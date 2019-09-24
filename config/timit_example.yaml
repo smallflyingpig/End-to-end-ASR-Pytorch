@@ -30,6 +30,8 @@ solver:
   # Data options
   dataset: 'timit'                      # 
   data_path: 'data/timit_mfcc39_phoneme63'    # Source data path
+  raw_data_path: 'data/'                      # Source data path
+  raw_wav_data: False
   n_jobs: 8                                   # Subprocess used for torch Dataloader
   max_timestep: 0                             # Max length for audio feature (0 for no restriction)
   max_label_len: 0                            # Max length for output sequence (0 for no restriction)
